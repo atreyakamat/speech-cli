@@ -1,0 +1,20 @@
+# Go
+/bin/
+*.exe
+*.test
+*.out
+
+# Local build artifacts
+speechd
+speech-cli
+
+# Recordings/logs
+*.wav
+*.log
+
+# Whisper assets (downloaded locally)
+models/*.bin
+bin/whisper
+
+# OS
+.DS_Store
