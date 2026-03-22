@@ -15,6 +15,7 @@ speech-cli
 # Whisper assets (downloaded locally)
 models/*.bin
 bin/whisper
+!bin/sensevoice
 
 # OS
 .DS_Store

@@ -44,7 +44,7 @@ func Default() Config {
 	return Config{
 		Whisper: WhisperConfig{
 			Command:   "whisper-cli -m {model} -f {wav} --no-timestamps -l en",
-			ModelPath: "",
+			ModelPath: "models/ggml-tiny.en.bin",
 			Language:  "en",
 		},
 		Inject: InjectConfig{Backend: "auto"},
