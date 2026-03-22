@@ -5,12 +5,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 type Config struct {
 	Whisper WhisperConfig `json:"whisper"`
 	Inject  InjectConfig  `json:"inject"`
 	Audio   AudioConfig   `json:"audio"`
+	UI      UIConfig      `json:"ui"`
 }
 
 type WhisperConfig struct {
@@ -29,7 +31,16 @@ type AudioConfig struct {
 	Channels   int    `json:"channels"`
 }
 
+type UIConfig struct {
+	ShowRecordingBar bool `json:"show_recording_bar"`
+}
+
 func Default() Config {
+	recorder := "arecord"
+	if runtime.GOOS == "windows" {
+		recorder = "ffmpeg"
+	}
+
 	return Config{
 		Whisper: WhisperConfig{
 			Command:   "whisper-cli -m {model} -f {wav} --no-timestamps -l en",
@@ -37,7 +48,8 @@ func Default() Config {
 			Language:  "en",
 		},
 		Inject: InjectConfig{Backend: "auto"},
-		Audio:  AudioConfig{Recorder: "arecord", SampleRate: 16000, Channels: 1},
+		Audio:  AudioConfig{Recorder: recorder, SampleRate: 16000, Channels: 1},
+		UI:     UIConfig{ShowRecordingBar: true},
 	}
 }
 

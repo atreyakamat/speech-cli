@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -34,14 +36,11 @@ func (r *ARecorder) Start(ctx context.Context) (string, error) {
 	}
 
 	wav := filepath.Join(r.StateDir, fmt.Sprintf("recording-%d.wav", time.Now().UnixNano()))
-	cmd := exec.CommandContext(ctx, r.Cmd,
-		"-q",
-		"-f", "S16_LE",
-		"-r", fmt.Sprintf("%d", r.SampleHz),
-		"-c", fmt.Sprintf("%d", r.Channels),
-		"-t", "wav",
-		wav,
-	)
+	args, err := recorderArgs(r.Cmd, r.SampleHz, r.Channels, wav)
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, r.Cmd, args...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
@@ -64,9 +63,18 @@ func (r *ARecorder) Stop() (string, error) {
 		return "", fmt.Errorf("not recording")
 	}
 
-	// Ask arecord to gracefully finish the wav header.
+	// Ask recorder to gracefully finish the wav header when possible.
 	if cmd.Process != nil {
-		_ = cmd.Process.Signal(os.Interrupt)
+		switch recorderKind(r.Cmd) {
+		case "arecord":
+			_ = cmd.Process.Signal(os.Interrupt)
+		default:
+			if runtime.GOOS == "windows" {
+				_ = cmd.Process.Kill()
+			} else {
+				_ = cmd.Process.Signal(syscall.SIGTERM)
+			}
+		}
 	}
 
 	done := make(chan error, 1)
@@ -95,6 +103,46 @@ func (r *ARecorder) Stop() (string, error) {
 			}
 			return "", fmt.Errorf("failed to stop recorder")
 		}
+	}
+}
+
+func recorderKind(cmd string) string {
+	return strings.ToLower(filepath.Base(cmd))
+}
+
+func recorderArgs(cmd string, sampleHz, channels int, wav string) ([]string, error) {
+	switch recorderKind(cmd) {
+	case "arecord":
+		return []string{
+			"-q",
+			"-f", "S16_LE",
+			"-r", fmt.Sprintf("%d", sampleHz),
+			"-c", fmt.Sprintf("%d", channels),
+			"-t", "wav",
+			wav,
+		}, nil
+	case "ffmpeg", "ffmpeg.exe":
+		format := "alsa"
+		input := "default"
+		if runtime.GOOS == "windows" {
+			format = "dshow"
+			input = "audio=default"
+		}
+		if v := strings.TrimSpace(os.Getenv("SPEECH_FFMPEG_INPUT")); v != "" {
+			input = v
+		}
+		return []string{
+			"-y",
+			"-hide_banner",
+			"-loglevel", "error",
+			"-f", format,
+			"-i", input,
+			"-ac", fmt.Sprintf("%d", channels),
+			"-ar", fmt.Sprintf("%d", sampleHz),
+			wav,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported recorder: %s (supported: arecord, ffmpeg)", cmd)
 	}
 }
 

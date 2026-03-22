@@ -2,6 +2,18 @@
 
 System-wide speech input layer (Linux-first MVP).
 
+## Full usage guide
+- See [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md) for Linux, Windows, and macOS setup and usage.
+
+## One-command setup
+- Linux: `bash scripts/install-linux.sh`
+- Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File .\\scripts\\install-windows.ps1`
+
+## Tested status
+- Build-tested: Linux, Windows, macOS (`amd64` and `arm64` cross-builds)
+- Runtime-smoke-tested in this workspace: Linux
+- Runtime on Windows/macOS still depends on host-specific audio/input permissions and installed local tools
+
 ## What you get
 ### Starter-scope MVP (matches the snippet)
 - `speechd` (default): press **Alt+S** → records **5s** → runs **whisper.cpp CLI** → types into focused window
@@ -26,6 +38,12 @@ go run ./cmd/speechd mvp
 go build ./...
 ```
 
+Check version:
+```bash
+go run ./cmd/speech-cli version
+go run ./cmd/speechd version
+```
+
 ## Whisper.cpp setup (for starter-scope MVP)
 ```bash
 git clone https://github.com/ggerganov/whisper.cpp
@@ -47,6 +65,35 @@ cp models/ggml-base.en.bin /path/to/speech-cli/models/
 ./speech-cli config set whisper-cmd 'whisper-cli -m {model} -f {wav} --no-timestamps -l en'
 
 sudo ./speechd run
+```
+
+## Model management
+Download a model (online):
+```bash
+./speech-cli model set tiny.en
+```
+
+Import a model you already have (offline setup):
+```bash
+./speech-cli model import /path/to/ggml-base.en.bin
+./speech-cli model list
+```
+
+After `whisper-cli` and a local model are present, transcription works without internet.
+
+## Linux and Windows notes
+- Linux default recorder: `arecord` (you can switch to `ffmpeg` in config)
+- Windows default recorder: `ffmpeg`
+- For Windows `ffmpeg` capture device naming, set `SPEECH_FFMPEG_INPUT` when needed
+- Windows hotkey backend uses Alt+S via Win32 key state polling
+- Windows default injection backend uses PowerShell SendKeys
+- Both platforms require local `whisper-cli` and a local model file for offline usage
+- Floating recording bar on Linux requires `yad` or `zenity`
+
+Enable/disable floating recording bar:
+```bash
+./speech-cli config set overlay-bar true
+./speech-cli config set overlay-bar false
 ```
 
 ## Troubleshooting

@@ -9,6 +9,7 @@ import (
 	"github.com/atreya/speech-cli/internal/config"
 	"github.com/atreya/speech-cli/internal/evhotkey"
 	"github.com/atreya/speech-cli/internal/inject"
+	"github.com/atreya/speech-cli/internal/overlay"
 	"github.com/atreya/speech-cli/internal/record"
 	"github.com/atreya/speech-cli/internal/transcribe"
 	"github.com/atreya/speech-cli/internal/util"
@@ -26,6 +27,8 @@ func Run(ctx context.Context, cfg config.Config) error {
 		Channels: cfg.Audio.Channels,
 		StateDir: stateDir,
 	}
+	bar := overlay.New(cfg.UI.ShowRecordingBar)
+	defer bar.Stop()
 
 	hot, errCh := evhotkey.PushToTalk(ctx)
 	select {
@@ -51,8 +54,10 @@ func Run(ctx context.Context, cfg config.Config) error {
 			}
 			if start {
 				log.Printf("[speechd] recording... (Alt+S held)")
+				bar.StartRecording()
 				w, err := rec.Start(ctx)
 				if err != nil {
+					bar.Stop()
 					log.Printf("[speechd] start record error: %v", err)
 					continue
 				}
@@ -64,6 +69,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 			if wav == "" {
 				continue
 			}
+			bar.Stop()
 			log.Printf("[speechd] processing...")
 			w, err := rec.Stop()
 			if err != nil {
