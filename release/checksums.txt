@@ -1,0 +1,4 @@
+c4b27c8be4d393a7f15c9c588dee23800ae3f0f7f6def8000074e29b54c13acc  speech-cli-linux-amd64
+23d867240e96a77558a14dffc3de920157e097d1b7dfd40033bb094692ddcd07  speech-cli-windows-amd64.exe
+d5ad223d3aeb7c1a1e359e904e9f2d4fad5d443f77a283bf6a40d73fe76e0561  speechd-linux-amd64
+1a0e9e6fb6d0c0d726e1531ad5c8f3cfabcc44ad5e2964f342658d0a29876695  speechd-windows-amd64.exe
