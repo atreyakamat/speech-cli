@@ -13,7 +13,7 @@ def main():
     wav_path = sys.argv[1]
     
     # Model path relative to project root
-    model_dir = "models/sensevoice"
+    model_dir = "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17"
     tokens = os.path.join(model_dir, "tokens.txt")
     model_path = os.path.join(model_dir, "model.onnx")
 
@@ -26,7 +26,6 @@ def main():
         model=model_path,
         tokens=tokens,
         num_threads=2,
-        use_gpu=False,
     )
 
     with wave.open(wav_path, "rb") as f:

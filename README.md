@@ -2,8 +2,12 @@
 
 System-wide speech input layer (Linux-first MVP).
 
-## Full usage guide
-- See [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md) for Linux, Windows, and macOS setup and usage.
+**🎤 Press Alt+S, speak, release → your words are typed automatically**
+
+## 📖 Documentation
+- **New here?** Start with [QUICK_START.md](QUICK_START.md) (5 minutes)
+- **Full guide:** [GETTING_STARTED.md](GETTING_STARTED.md) (comprehensive setup)
+- **Platform specifics:** [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md) (Linux, Windows, macOS)
 
 ## One-command setup
 - Linux: `bash scripts/install-linux.sh`

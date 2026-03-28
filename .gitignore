@@ -3,6 +3,7 @@
 *.exe
 *.test
 *.out
+/release/
 
 # Local build artifacts
 speechd
@@ -12,10 +13,20 @@ speech-cli
 *.wav
 *.log
 
+# Models and large binary assets
+models/
+*.tar.bz2
+*.zip
+*.onnx
+
 # Whisper assets (downloaded locally)
-models/*.bin
 bin/whisper
 !bin/sensevoice
+
+# Environment
+.venv/
+node_modules/
+__pycache__/
 
 # OS
 .DS_Store

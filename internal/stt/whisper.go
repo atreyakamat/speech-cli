@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -19,7 +18,7 @@ var tsPrefix = regexp.MustCompile(`^\[[0-9:.\s\-\>]+\]\s*`)
 func Transcribe(file string) string {
 	bin := "./bin/whisper"
 	model := "models/ggml-tiny.en.bin"
-	
+
 	// Support SenseVoice if it exists in bin
 	if _, ok := util.LookPath("./bin/sensevoice"); ok {
 		bin = "./bin/sensevoice"
