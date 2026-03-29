@@ -10,15 +10,27 @@ import (
 
 type Config struct {
 	Whisper WhisperConfig `json:"whisper"`
+	STT     STTConfig     `json:"stt"`
 	Inject  InjectConfig  `json:"inject"`
 	Audio   AudioConfig   `json:"audio"`
 	UI      UIConfig      `json:"ui"`
 }
 
 type WhisperConfig struct {
+	Backend   string `json:"backend"` // command|sherpa
 	Command   string `json:"command"` // shell command; supports {wav} and {model}
 	ModelPath string `json:"model_path"`
 	Language  string `json:"language"`
+}
+
+type STTConfig struct {
+	Sherpa SherpaConfig `json:"sherpa"`
+}
+
+type SherpaConfig struct {
+	ModelPath  string `json:"model_path"`
+	TokensPath string `json:"tokens_path"`
+	NumThreads int    `json:"num_threads"`
 }
 
 type InjectConfig struct {
@@ -43,9 +55,17 @@ func Default() Config {
 
 	return Config{
 		Whisper: WhisperConfig{
+			Backend:   "command",
 			Command:   "whisper-cli -m {model} -f {wav} --no-timestamps -l en",
 			ModelPath: "",
 			Language:  "en",
+		},
+		STT: STTConfig{
+			Sherpa: SherpaConfig{
+				ModelPath:  "",
+				TokensPath: "",
+				NumThreads: 4,
+			},
 		},
 		Inject: InjectConfig{Backend: "auto"},
 		Audio:  AudioConfig{Recorder: recorder, SampleRate: 16000, Channels: 1},
