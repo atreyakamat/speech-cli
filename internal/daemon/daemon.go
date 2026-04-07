@@ -79,14 +79,28 @@ func Run(ctx context.Context, cfg config.Config) error {
 			}
 			wav = ""
 
-			if cfg.Whisper.ModelPath == "" || cfg.Whisper.Command == "" {
-				log.Printf("[speechd] whisper not configured (set model_path + command)")
+			if cfg.Whisper.ModelPath == "" && cfg.Whisper.Backend == "command" {
+				log.Printf("[speechd] whisper model_path not set")
 				continue
+			}
+
+			var tr transcribe.Transcriber
+			if cfg.Whisper.Backend == "sherpa" {
+				tr = &transcribe.SherpaTranscriber{
+					ModelPath:  cfg.STT.Sherpa.ModelPath,
+					TokensPath: cfg.STT.Sherpa.TokensPath,
+					NumThreads: cfg.STT.Sherpa.NumThreads,
+				}
+			} else {
+				tr = &transcribe.CommandTranscriber{
+					Command:   cfg.Whisper.Command,
+					ModelPath: cfg.Whisper.ModelPath,
+				}
 			}
 
 			// Short timeout to avoid hanging forever.
 			tctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			text, err := transcribe.Run(tctx, cfg.Whisper.Command, w, cfg.Whisper.ModelPath)
+			text, err := tr.Transcribe(tctx, w)
 			cancel()
 			if err != nil {
 				log.Printf("[speechd] transcribe error: %v", err)
