@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-04-07
+- Decoupled STT engine from the daemon to allow multiple backends.
+- Improved dependency management and tidied up `go.mod`.
+- Enhanced transcribe interface for plug-and-play STT engines.
+
+## [0.1.1] - 2026-03-28
+- Added support for Sherpa-ONNX as an alternative STT backend.
+- Refactored internal architecture for better maintainability.
+- Expanded configuration options to support both command-based and native STT.
+
 ## [0.1.0] - 2026-03-22
 - Added semantic version command to both binaries:
   - speech-cli version
