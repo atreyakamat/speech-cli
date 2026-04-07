@@ -25,6 +25,16 @@ jobs:
             goos: windows
             goarch: amd64
             suffix: ".exe"
+          - os: macos
+            arch: amd64
+            goos: darwin
+            goarch: amd64
+            suffix: ""
+          - os: macos
+            arch: arm64
+            goos: darwin
+            goarch: arm64
+            suffix: ""
 
     steps:
       - name: Checkout code

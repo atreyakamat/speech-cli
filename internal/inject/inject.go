@@ -18,6 +18,7 @@ const (
 	BackendWType  Backend = "wtype"
 	BackendXDo    Backend = "xdotool"
 	BackendPS     Backend = "powershell"
+	BackendApple  Backend = "applescript"
 	BackendStdout Backend = "stdout"
 )
 
@@ -28,6 +29,9 @@ func Type(ctx context.Context, backend Backend, text string) error {
 	if backend == BackendAuto {
 		if runtime.GOOS == "windows" {
 			backend = BackendPS
+		}
+		if runtime.GOOS == "darwin" {
+			backend = BackendApple
 		}
 
 		if os.Getenv("WAYLAND_DISPLAY") != "" {
@@ -65,6 +69,16 @@ func Type(ctx context.Context, backend Backend, text string) error {
 		escaped := strings.ReplaceAll(text, "'", "''")
 		script := "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('" + escaped + "')"
 		cmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-Command", script)
+		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	case BackendApple:
+		if runtime.GOOS != "darwin" {
+			return fmt.Errorf("applescript backend is only available on macos")
+		}
+		escaped := strings.ReplaceAll(text, "\"", "\\\"")
+		script := fmt.Sprintf("tell application \"System Events\" to keystroke \"%s\"", escaped)
+		cmd := exec.CommandContext(ctx, "osascript", "-e", script)
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
 		return cmd.Run()
