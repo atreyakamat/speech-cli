@@ -62,7 +62,5 @@ sudo ./speechd
 - **Hotkey not working?** Run with `sudo` or add yourself to `input` group
 - **No text appears?** Install `wtype` (Wayland) or `xdotool` (X11)
 - **Empty transcription?** Check microphone with `arecord -d 3 test.wav && aplay test.wav`
-
 ---
-
 **For full documentation, see [GETTING_STARTED.md](GETTING_STARTED.md)**

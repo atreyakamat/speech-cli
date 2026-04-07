@@ -23,7 +23,7 @@ func (s *SherpaTranscriber) Transcribe(ctx context.Context, wavPath string) (str
 	}
 
 	config := sherpa.OfflineRecognizerConfig{
-		OfflineModelConfig: sherpa.OfflineModelConfig{
+		ModelConfig: sherpa.OfflineModelConfig{
 			SenseVoice: sherpa.OfflineSenseVoiceModelConfig{
 				Model: s.ModelPath,
 			},
@@ -39,18 +39,18 @@ func (s *SherpaTranscriber) Transcribe(ctx context.Context, wavPath string) (str
 	}
 	defer sherpa.DeleteOfflineRecognizer(recognizer)
 
-	samples, sampleRate, err := sherpa.ReadWave(wavPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read wave file: %v", err)
+	wave := sherpa.ReadWave(wavPath)
+	if wave == nil {
+		return "", fmt.Errorf("failed to read wave file: %s", wavPath)
 	}
 
 	stream := sherpa.NewOfflineStream(recognizer)
 	defer sherpa.DeleteOfflineStream(stream)
 
-	stream.AcceptWaveform(sampleRate, samples)
+	stream.AcceptWaveform(wave.SampleRate, wave.Samples)
 
 	recognizer.Decode(stream)
-	result := recognizer.GetResult(stream)
+	result := stream.GetResult()
 
 	return result.Text, nil
 }
