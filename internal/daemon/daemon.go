@@ -16,6 +16,10 @@ import (
 )
 
 func Run(ctx context.Context, cfg config.Config) error {
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %v", err)
+	}
+
 	stateDir, err := config.StateDir()
 	if err != nil {
 		return err
@@ -31,90 +35,100 @@ func Run(ctx context.Context, cfg config.Config) error {
 	defer bar.Stop()
 
 	hot, errCh := evhotkey.PushToTalk(ctx)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return err
-		}
-	default:
-	}
 
 	var wav string
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case err := <-errCh:
+		case err, ok := <-errCh:
+			if !ok {
+				errCh = nil // channel closed
+				continue
+			}
 			if err != nil {
-				return err
+				return fmt.Errorf("hotkey error: %v", err)
 			}
 		case start, ok := <-hot:
 			if !ok {
 				return fmt.Errorf("hotkey channel closed")
 			}
-			if start {
-				log.Printf("[speechd] recording... (Alt+S held)")
-				bar.StartRecording()
-				w, err := rec.Start(ctx)
+			
+			// Protect against panics in the main loop to keep the daemon alive
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("[speechd] RECOVERED from panic: %v", r)
+						bar.Stop()
+						wav = ""
+					}
+				}()
+
+				if start {
+					log.Printf("[speechd] recording... (Alt+S held)")
+					bar.StartRecording()
+					w, err := rec.Start(ctx)
+					if err != nil {
+						bar.Stop()
+						log.Printf("[speechd] start record error: %v", err)
+						return
+					}
+					wav = w
+					return
+				}
+
+				// stop
+				if wav == "" {
+					return
+				}
+				bar.Stop()
+				log.Printf("[speechd] processing...")
+				w, err := rec.Stop()
 				if err != nil {
-					bar.Stop()
-					log.Printf("[speechd] start record error: %v", err)
-					continue
+					log.Printf("[speechd] stop record error: %v", err)
+					wav = ""
+					return
 				}
-				wav = w
-				continue
-			}
-
-			// stop
-			if wav == "" {
-				continue
-			}
-			bar.Stop()
-			log.Printf("[speechd] processing...")
-			w, err := rec.Stop()
-			if err != nil {
-				log.Printf("[speechd] stop record error: %v", err)
+				wavPath := w
 				wav = ""
-				continue
-			}
-			wav = ""
 
-			if cfg.Whisper.ModelPath == "" && cfg.Whisper.Backend == "command" {
-				log.Printf("[speechd] whisper model_path not set")
-				continue
-			}
-
-			var tr transcribe.Transcriber
-			if cfg.Whisper.Backend == "sherpa" {
-				tr = &transcribe.SherpaTranscriber{
-					ModelPath:  cfg.STT.Sherpa.ModelPath,
-					TokensPath: cfg.STT.Sherpa.TokensPath,
-					NumThreads: cfg.STT.Sherpa.NumThreads,
+				if cfg.Whisper.ModelPath == "" && cfg.Whisper.Backend == "command" {
+					log.Printf("[speechd] whisper model_path not set")
+					return
 				}
-			} else {
-				tr = &transcribe.CommandTranscriber{
-					Command:   cfg.Whisper.Command,
-					ModelPath: cfg.Whisper.ModelPath,
+
+				var tr transcribe.Transcriber
+				if cfg.Whisper.Backend == "sherpa" {
+					tr = &transcribe.SherpaTranscriber{
+						ModelPath:  cfg.STT.Sherpa.ModelPath,
+						TokensPath: cfg.STT.Sherpa.TokensPath,
+						NumThreads: cfg.STT.Sherpa.NumThreads,
+					}
+				} else {
+					tr = &transcribe.CommandTranscriber{
+						Command:   cfg.Whisper.Command,
+						ModelPath: cfg.Whisper.ModelPath,
+					}
 				}
-			}
 
-			// Short timeout to avoid hanging forever.
-			tctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			text, err := tr.Transcribe(tctx, w)
-			cancel()
-			if err != nil {
-				log.Printf("[speechd] transcribe error: %v", err)
-				continue
-			}
-			text = util.CleanTranscript(text)
-			if text == "" {
-				log.Printf("[speechd] empty transcript")
-				continue
-			}
+				// Short timeout to avoid hanging forever.
+				tctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+				text, err := tr.Transcribe(tctx, wavPath)
+				cancel()
+				if err != nil {
+					log.Printf("[speechd] transcribe error: %v", err)
+					return
+				}
+				text = util.CleanTranscript(text)
+				if text == "" {
+					log.Printf("[speechd] empty transcript")
+					return
+				}
 
-			if err := inject.Type(ctx, inject.Backend(cfg.Inject.Backend), text); err != nil {
-				log.Printf("[speechd] inject error: %v", err)
-			}
+				if err := inject.Type(ctx, inject.Backend(cfg.Inject.Backend), text); err != nil {
+					log.Printf("[speechd] inject error: %v", err)
+				}
+			}()
 		}
 	}
 }
