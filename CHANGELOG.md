@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 - Decoupled STT engine from the daemon to allow multiple backends.
 - Improved dependency management and tidied up `go.mod`.
 - Enhanced transcribe interface for plug-and-play STT engines.
+- Added macOS (Intel and Apple Silicon) build support with AppleScript text injection.
+- Prepared project for Android and iOS builds (binaries only).
 
 ## [0.1.1] - 2026-03-28
 - Added support for Sherpa-ONNX as an alternative STT backend.
